@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/package.json",
   "name": "opencode2-tasks",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A Tasks panel for OpenCode V2: a `tasks` tool plus a live, nestable task list in the TUI sidebar.",
   "type": "module",
   "license": "MIT",

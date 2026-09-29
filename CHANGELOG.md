@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-09-29
+
+### Fixed
+
+- The `tasks` tool no longer returns a structured `output` without declaring an output schema. The runtime rejected the result of **every** call with `Tool result declared output without an output schema`. Because the list was written to disk before the return, the failure was easy to miss: the sidebar kept updating, so the panel silently went stale instead of erroring visibly.
+
+### Added
+
+- `summarizeTasks` (`src/tasks.ts`), a pure helper that renders a one-line status summary such as `6 task(s): 3 done, 1 in progress, 2 pending.`, now used as the tool's text result.
+- `test/tool.test.ts`, which loads the plugin entrypoint with a fake context and asserts the tool result shape so the regression above cannot come back.
+
 ## [0.1.0] - 2026-09-29
 
 ### Added
@@ -24,5 +35,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Unit test suite (`node:test`) covering normalization, flattening, and storage.
 - TypeScript type-checking, Prettier formatting, and a GitHub Actions CI workflow.
 
-[Unreleased]: https://github.com/smallnest/opencode2-tasks/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/smallnest/opencode2-tasks/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/smallnest/opencode2-tasks/releases/tag/v0.1.1
 [0.1.0]: https://github.com/smallnest/opencode2-tasks/releases/tag/v0.1.0

@@ -11,6 +11,7 @@ import {
   loadTasks,
   normalizeTasks,
   saveTasks,
+  summarizeTasks,
   tasksDir,
   tasksFile,
 } from "../src/tasks.ts"
@@ -114,6 +115,31 @@ describe("flattenTasks", () => {
 describe("STATUS_MARK", () => {
   it("has a marker for every status", () => {
     for (const status of TASK_STATUSES) assert.equal(typeof STATUS_MARK[status], "string")
+  })
+})
+
+describe("summarizeTasks", () => {
+  const withStatus = (id: string, status: string) => ({ id, parent_id: null, status, summary: id })
+
+  it("reports an empty list as cleared", () => {
+    assert.equal(summarizeTasks([]), "Task list cleared.")
+  })
+
+  it("counts only the statuses that occur, most interesting first", () => {
+    const tasks = normalizeTasks([
+      withStatus("T1", "pending"),
+      withStatus("T2", "pending"),
+      withStatus("T3", "in_progress"),
+      withStatus("T4", "done"),
+      withStatus("T5", "done"),
+      withStatus("T6", "done"),
+    ])
+    assert.equal(summarizeTasks(tasks), "6 task(s): 3 done, 1 in progress, 2 pending.")
+  })
+
+  it("renders in_progress as two words and keeps every status distinct", () => {
+    const tasks = normalizeTasks(TASK_STATUSES.map((status, index) => withStatus(`T${index}`, status)))
+    assert.equal(summarizeTasks(tasks), "5 task(s): 1 done, 1 in progress, 1 blocked, 1 pending, 1 cancelled.")
   })
 })
 

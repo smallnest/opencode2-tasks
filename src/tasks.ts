@@ -136,6 +136,28 @@ export async function saveTasks(sessionID: string, tasks: readonly Task[]): Prom
   await writeFile(tasksFile(sessionID), `${JSON.stringify(tasks, null, 2)}\n`, "utf8")
 }
 
+/** Order statuses appear in {@link summarizeTasks}, most interesting first. */
+const SUMMARY_ORDER: readonly TaskStatus[] = ["done", "in_progress", "blocked", "pending", "cancelled"]
+
+/**
+ * One-line, human-readable summary of a task list.
+ *
+ * Used as the `tasks` tool's text result: the tool deliberately declares no
+ * structured `output` schema, so this string is what the model reads back.
+ * Only statuses that actually occur are mentioned.
+ */
+export function summarizeTasks(tasks: readonly Task[]): string {
+  if (tasks.length === 0) return "Task list cleared."
+
+  const counts = new Map<TaskStatus, number>()
+  for (const task of tasks) counts.set(task.status, (counts.get(task.status) ?? 0) + 1)
+
+  const parts = SUMMARY_ORDER.filter((status) => counts.has(status)).map(
+    (status) => `${counts.get(status)} ${status.replace("_", " ")}`,
+  )
+  return `${tasks.length} task(s): ${parts.join(", ")}.`
+}
+
 /** Read a session's task list, returning an empty list when none is stored yet. */
 export async function loadTasks(sessionID: string): Promise<Task[]> {
   try {

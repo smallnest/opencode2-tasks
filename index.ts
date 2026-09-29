@@ -2,7 +2,7 @@ import type { Plugin, Skill } from "@opencode/plugin"
 import { readFile } from "node:fs/promises"
 import { fileURLToPath } from "node:url"
 import { parseSkillDocument } from "./src/skill.ts"
-import { TASK_STATUSES, normalizeTasks, saveTasks } from "./src/tasks.ts"
+import { TASK_STATUSES, normalizeTasks, saveTasks, summarizeTasks } from "./src/tasks.ts"
 
 /** Where the bundled planning skill lives inside the package. */
 const SKILL_FILE = new URL("./skills/task-planning/SKILL.md", import.meta.url)
@@ -48,11 +48,12 @@ async function registerTools(ctx: Plugin.Context): Promise<void> {
         const tasks = normalizeTasks((input as { tasks?: unknown } | undefined)?.tasks)
         const sessionID = String(toolCtx?.sessionID ?? "global")
         await saveTasks(sessionID, tasks)
-        const done = tasks.filter((task) => task.status === "done").length
-        return {
-          output: { tasks },
-          content: `Task list updated: ${tasks.length} task(s), ${done} done.`,
-        }
+
+        // Only `content` is returned on purpose: this tool declares no
+        // structured `output` schema, and returning `output` anyway makes the
+        // runtime reject the result with "Tool result declared output without
+        // an output schema" — which made every call fail.
+        return { content: summarizeTasks(tasks) }
       },
     })
   })
