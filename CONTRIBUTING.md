@@ -39,6 +39,44 @@ Individual commands:
 - **Preserve the storage format.** Existing `~/.local/state/opencode-tasks/*.json` files must keep working. If the format must change, handle the old shape and note it in the changelog.
 - **Update the docs.** User-visible changes need an entry under `Unreleased` in `CHANGELOG.md`, and the matching section in **both** `README.md` and `README_CN.md` kept in sync.
 
+## Releasing
+
+Releases are cut by pushing a tag; `.github/workflows/release.yml` then runs the full check, publishes to npm, and opens a GitHub release.
+
+```bash
+git tag -a v0.1.0 -m "opencode2-tasks 0.1.0"
+git push origin v0.1.0
+```
+
+A failed release can be retried without touching the tag:
+
+```bash
+gh workflow run release.yml --ref v0.1.0
+```
+
+### npm authentication
+
+The workflow publishes with **trusted publishing (OIDC)**: the job requests `id-token: write`, and npm exchanges that for a short-lived credential, so no long-lived token is needed and provenance is generated automatically.
+
+There is one ordering constraint: npm only lets you configure a trusted publisher for a package that **already exists**. The very first publish of a new package therefore has to use 2FA interactively:
+
+```bash
+npm publish --access public --otp=<code>
+```
+
+Then, once, from a checkout (requires 2FA enabled on the npm account and `npm@11.15.0+`):
+
+```bash
+npm trust github opencode2-tasks \
+  --file release.yml \
+  --repository smallnest/opencode2-tasks \
+  --allow-publish
+```
+
+`repository.url` in `package.json` must match the GitHub repository, or the OIDC claim check will fail. Verify with `npm trust list opencode2-tasks`.
+
+The `NPM_TOKEN` secret is only a fallback for accounts that cannot use OIDC. If you set it, it must be a granular access token with **Bypass 2FA** enabled — a plain granular token is rejected with `E403`. Once trusted publishing works, delete the secret.
+
 ## Host-coupled dependencies
 
 `@opencode/plugin`, `@opencode/theme`, `@opentui/core`, `@opentui/solid`, and `solid-js` are pinned to what the running OpenCode version ships, and `@opentui/solid` declares an **exact** `solid-js` peer. Bumping any of them alone makes `npm ci` fail with `ERESOLVE`, so Dependabot is configured to ignore them.
