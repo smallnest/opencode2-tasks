@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-09-29
+
+### Fixed
+
+- The `Tasks` panel is now reactive per session. The component body contained an early `return null` for sessions without tasks, and a Solid component body runs only once — so the panel could keep showing the previous session's header with no rows, or never appear at all once a session gained tasks. Both the visibility check and the rows now use `Show` / `For`.
+- Clicking the `Tasks` header re-reads the task files, so expanding always shows the latest state instead of waiting for the next poll.
+
+### Added
+
+- `tasksForSession`, the single tested place that decides which session's rows are rendered.
+- `readAllTasks`, moved out of the TUI entrypoint into `src/tasks.ts` and covered by tests: multi-session reads, url-encoded session ids, and an unreadable file being skipped without blanking the panel.
+
 ## [0.1.1] - 2026-09-29
 
 ### Fixed
@@ -35,6 +47,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Unit test suite (`node:test`) covering normalization, flattening, and storage.
 - TypeScript type-checking, Prettier formatting, and a GitHub Actions CI workflow.
 
-[Unreleased]: https://github.com/smallnest/opencode2-tasks/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/smallnest/opencode2-tasks/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/smallnest/opencode2-tasks/releases/tag/v0.1.2
 [0.1.1]: https://github.com/smallnest/opencode2-tasks/releases/tag/v0.1.1
 [0.1.0]: https://github.com/smallnest/opencode2-tasks/releases/tag/v0.1.0

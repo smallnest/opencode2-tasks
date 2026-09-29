@@ -10,7 +10,7 @@
  * without booting a runtime.
  */
 
-import { mkdir, readFile, writeFile } from "node:fs/promises"
+import { mkdir, readFile, readdir, writeFile } from "node:fs/promises"
 import { homedir } from "node:os"
 import { join } from "node:path"
 
@@ -136,6 +136,17 @@ export async function saveTasks(sessionID: string, tasks: readonly Task[]): Prom
   await writeFile(tasksFile(sessionID), `${JSON.stringify(tasks, null, 2)}\n`, "utf8")
 }
 
+/**
+ * Select the rows to render for one session.
+ *
+ * The sidebar shows exactly the current session's list: a session that has no
+ * stored tasks reads as empty, and no other session's tasks can leak in. This is
+ * the single place that decides what the panel displays, so it is worth naming.
+ */
+export function tasksForSession(bySession: Record<string, readonly Task[]>, sessionID: string): FlatTask[] {
+  return flattenTasks(bySession[sessionID] ?? [])
+}
+
 /** Order statuses appear in {@link summarizeTasks}, most interesting first. */
 const SUMMARY_ORDER: readonly TaskStatus[] = ["done", "in_progress", "blocked", "pending", "cancelled"]
 
@@ -166,4 +177,41 @@ export async function loadTasks(sessionID: string): Promise<Task[]> {
   } catch {
     return []
   }
+}
+
+/**
+ * Read every session's stored task list, keyed by session id.
+ *
+ * This is what the sidebar renders from, and it is also what the sidebar
+ * re-reads when the section header is clicked, so expanding always shows the
+ * latest state even if the polling interval has not fired yet.
+ *
+ * A file that is missing, unreadable, or only half-written is skipped rather
+ * than failing the whole read: one bad file must not blank the panel. An
+ * absent directory means nothing has been stored yet.
+ */
+export async function readAllTasks(): Promise<Record<string, Task[]>> {
+  const sessions: Record<string, Task[]> = {}
+
+  let files: string[]
+  try {
+    files = await readdir(tasksDir())
+  } catch {
+    return sessions
+  }
+
+  await Promise.all(
+    files
+      .filter((file) => file.endsWith(".json"))
+      .map(async (file) => {
+        try {
+          const sessionID = decodeURIComponent(file.slice(0, -5))
+          sessions[sessionID] = normalizeTasks(JSON.parse(await readFile(join(tasksDir(), file), "utf8")))
+        } catch {
+          // Skip files that are missing or only half-written.
+        }
+      }),
+  )
+
+  return sessions
 }

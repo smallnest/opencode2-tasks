@@ -51,21 +51,38 @@ Both entrypoints load in different runtimes, so they share a single dependency-f
 
 ## Installation
 
-### From npm
+### With the OpenCode CLI
 
-Add the package to the `plugins` array in your OpenCode configuration:
+```bash
+opencode plugin add opencode2-tasks   # install and write the global configuration
+opencode reload                       # apply it without restarting the service
+```
+
+`opencode plugin add` targets the **global** configuration, so the plugin becomes available in every project. To enable it for one project only, add it to that project's `opencode.json(c)` by hand instead (see below).
+
+The rest of the subcommands:
+
+```bash
+opencode plugin list                       # what is loaded, and from where
+opencode plugin add opencode2-tasks@0.1.1  # pin an exact version
+opencode plugin check                      # is a newer version available?
+opencode plugin update                     # upgrade to the latest
+opencode plugin remove opencode2-tasks     # uninstall
+```
+
+The `./tui` export is discovered automatically, so the sidebar panel loads with the same entry.
+
+### By editing the configuration
 
 ```jsonc
 // ~/.config/opencode/opencode.jsonc  (global)  or  ./opencode.jsonc  (project)
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugins": ["opencode2-tasks"]
+  "plugins": ["opencode2-tasks"] // or "opencode2-tasks@0.1.1" to pin a version
 }
 ```
 
-The `./tui` export is discovered automatically, so the sidebar panel loads with the same entry.
-
-If you use OpenCode against a **remote server**, register the package in the CLI-only configuration so the panel keeps working locally:
+If you use OpenCode against a **remote server**, also register the package in the CLI-only configuration so the panel keeps working locally:
 
 ```jsonc
 // ~/.config/opencode/cli.json
@@ -83,15 +100,9 @@ If you use OpenCode against a **remote server**, register the package in the CLI
 }
 ```
 
-### Pinned version
+Register either the published package **or** a local checkout, never both: the plugin would load twice, registering the `tasks` tool and the `task-planning` skill twice each.
 
-```jsonc
-{
-  "plugins": ["opencode2-tasks@0.1.0"]
-}
-```
-
-Then restart the OpenCode service (`opencode service restart`) or the TUI.
+Then apply the change with `opencode reload`, or restart the service (`opencode service restart`) if you edited the configuration while it was running.
 
 ## Usage
 
@@ -160,7 +171,7 @@ tui.tsx  ─┘                      └─ OpenCode TUI runtime      (sidebar p
 
 - `src/tasks.ts` and `src/skill.ts` hold the types, storage paths, and pure helpers (`normalizeTasks`, `flattenTasks`, `parseSkillDocument`). Neither has **any OpenCode import**, so both are trivially unit-testable.
 - `index.ts` imports them and registers the `tasks` tool plus the bundled skill. It imports `@opencode/plugin` with `import type` only, because the server runtime resolves that specifier itself; the import is erased at load time and the exported object already matches the `{ id, setup }` contract.
-- `tui.tsx` imports the model and renders the panel. It polls the state directory every 1.5 s (the sidebar renders synchronously while the tool writes from another process) and returns a cleanup function that stops the timer.
+- `tui.tsx` imports the model and renders the panel. It polls the state directory every 1.5 s (the sidebar renders synchronously while the tool writes from another process) and returns a cleanup function that stops the timer. Clicking the section header re-reads immediately, so expanding never shows a stale snapshot.
 
 See [`docs/architecture.md`](./docs/architecture.md) for the full design notes.
 
@@ -181,6 +192,15 @@ Each file is a JSON array of tasks:
 ```
 
 Files are written atomically enough that a half-written file is skipped by the reader. Task ids are `encodeURIComponent`-escaped so they are safe as filenames.
+
+### Session scope
+
+The task list is **per session**, and the panel shows only the current session's list:
+
+- Each session has its own file, named after its session id. Opening a new session starts from an empty list — nothing carries over from the session you were in before.
+- The `Tasks` section stays hidden while the current session has no tasks, and appears as soon as the agent writes some. It disappears again if the list is cleared.
+- The panel mirrors **every** session's list into memory, so switching sessions re-renders instantly without waiting for a re-read. The background poll and the click-to-refresh keep those mirrored lists current.
+- Deleting one session's file affects only that session.
 
 ## Development
 
@@ -232,7 +252,10 @@ cat "${XDG_STATE_HOME:-$HOME/.local/state}/opencode-tasks/"*.json
 The `Tasks` section only renders when the current session has at least one task. Ask the agent to call the `tasks` tool, then wait one refresh interval (1.5 s). Restart the service after changing `plugins`: `opencode service restart`.
 
 **The panel shows stale data.**
-The TUI reads from disk on an interval. If a task file was edited by hand, it is picked up within 1.5 s.
+The TUI re-reads the state directory every 1.5 s, and clicking the `Tasks` header re-reads immediately — so if you edited a task file by hand, expand the section (or wait one interval) to pick it up.
+
+**The `Tasks` section shows fewer rows than expected.**
+A task file that is unreadable or half-written is skipped rather than blanking the panel, and rows only appear for the session you are looking at. Run `cat "${XDG_STATE_HOME:-$HOME/.local/state}/opencode-tasks/"*.json` to check what is actually stored.
 
 **`Cannot find module '@opencode/plugin'`.**
 That import is type-only inside `index.ts`, so it is erased at runtime. If you see this from `tui.tsx`, your OpenCode build does not resolve `@opencode/plugin/tui`; upgrade to a build that does, or pin a compatible version.

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict"
-import { mkdtemp, rm } from "node:fs/promises"
+import { mkdtemp, rm, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { after, before, describe, it } from "node:test"
@@ -10,10 +10,12 @@ import {
   isTaskStatus,
   loadTasks,
   normalizeTasks,
+  readAllTasks,
   saveTasks,
   summarizeTasks,
   tasksDir,
   tasksFile,
+  tasksForSession,
 } from "../src/tasks.ts"
 
 describe("isTaskStatus", () => {
@@ -112,6 +114,33 @@ describe("flattenTasks", () => {
   })
 })
 
+describe("tasksForSession", () => {
+  const task = (id: string) => ({ id, parent_id: null, status: "pending" as const, summary: id })
+  const bySession = {
+    ses_a: [task("A1"), task("A2")],
+    ses_b: [task("B1")],
+  }
+
+  it("returns only the requested session's rows", () => {
+    assert.deepEqual(
+      tasksForSession(bySession, "ses_a").map((row) => row.id),
+      ["A1", "A2"],
+    )
+    assert.deepEqual(
+      tasksForSession(bySession, "ses_b").map((row) => row.id),
+      ["B1"],
+    )
+  })
+
+  it("returns nothing for a session that has no tasks yet", () => {
+    assert.deepEqual(tasksForSession(bySession, "ses_brand_new"), [])
+  })
+
+  it("returns nothing when no session has any tasks", () => {
+    assert.deepEqual(tasksForSession({}, "ses_a"), [])
+  })
+})
+
 describe("STATUS_MARK", () => {
   it("has a marker for every status", () => {
     for (const status of TASK_STATUSES) assert.equal(typeof STATUS_MARK[status], "string")
@@ -173,5 +202,82 @@ describe("storage", () => {
 
   it("returns an empty list when nothing is stored", async () => {
     assert.deepEqual(await loadTasks("ses_missing"), [])
+  })
+})
+
+describe("readAllTasks", () => {
+  let dir: string
+  let previous: string | undefined
+
+  before(async () => {
+    previous = process.env.XDG_STATE_HOME
+    dir = await mkdtemp(join(tmpdir(), "opencode-tasks-all-"))
+    process.env.XDG_STATE_HOME = dir
+  })
+
+  after(async () => {
+    if (previous === undefined) delete process.env.XDG_STATE_HOME
+    else process.env.XDG_STATE_HOME = previous
+    await rm(dir, { recursive: true, force: true })
+  })
+
+  it("returns an empty map when nothing has been stored yet", async () => {
+    assert.deepEqual(await readAllTasks(), {})
+  })
+
+  it("returns every session's list, keyed by session id", async () => {
+    await saveTasks("ses_a", normalizeTasks([{ id: "T1", status: "done" }]))
+    await saveTasks("ses_b", normalizeTasks([{ id: "B1", status: "pending" }]))
+
+    const all = await readAllTasks()
+    assert.deepEqual(Object.keys(all).sort(), ["ses_a", "ses_b"])
+    assert.equal(all.ses_a?.[0]?.status, "done")
+    assert.equal(all.ses_b?.[0]?.id, "B1")
+  })
+
+  it("keeps sessions isolated from one another", async () => {
+    // A brand-new session has no file, so it must read as empty and must not
+    // inherit rows from any other session.
+    assert.deepEqual(await loadTasks("ses_brand_new"), [])
+
+    await saveTasks("ses_one", normalizeTasks([{ id: "T1", status: "done" }]))
+    await saveTasks("ses_two", normalizeTasks([{ id: "T2", status: "pending" }]))
+
+    const all = await readAllTasks()
+    assert.equal(all.ses_brand_new, undefined)
+    assert.deepEqual(
+      all.ses_one?.map((task) => task.id),
+      ["T1"],
+    )
+    assert.deepEqual(
+      all.ses_two?.map((task) => task.id),
+      ["T2"],
+    )
+  })
+
+  it("normalizes what it reads back", async () => {
+    await writeFile(join(dir, "opencode-tasks", "ses_raw.json"), JSON.stringify([{ id: 7, status: "nope" }]), "utf8")
+    const all = await readAllTasks()
+    assert.deepEqual(all.ses_raw, [{ id: "7", parent_id: null, status: "pending", summary: "" }])
+  })
+
+  it("skips an unreadable file without dropping the others", async () => {
+    await writeFile(join(dir, "opencode-tasks", "ses_broken.json"), "{ half-written", "utf8")
+
+    const all = await readAllTasks()
+    assert.equal("ses_broken" in all, false)
+    assert.ok("ses_a" in all, "a single bad file must not blank the panel")
+  })
+
+  it("decodes url-encoded session ids", async () => {
+    await saveTasks("ses/with/slash", normalizeTasks([{ id: "T1" }]))
+    const all = await readAllTasks()
+    assert.ok("ses/with/slash" in all)
+  })
+
+  it("ignores files that are not .json", async () => {
+    await writeFile(join(dir, "opencode-tasks", "notes.txt"), "ignore me", "utf8")
+    const all = await readAllTasks()
+    assert.equal("notes" in all, false)
   })
 })

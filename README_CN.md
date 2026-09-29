@@ -51,19 +51,36 @@
 
 ## 安装
 
-### 从 npm 安装
+### 用 OpenCode 命令行安装
 
-在 OpenCode 配置的 `plugins` 数组中加入本包：
+```bash
+opencode plugin add opencode2-tasks   # 安装并写入全局配置
+opencode reload                       # 无需重启服务即可生效
+```
+
+`opencode plugin add` 写的是**全局**配置，装完后所有项目都可用。只想在某个项目里启用，就别用 `add`，直接改该项目的 `opencode.json(c)`（见下一节）。
+
+其余子命令：
+
+```bash
+opencode plugin list                       # 当前加载了哪些插件、来自哪里
+opencode plugin add opencode2-tasks@0.1.1  # 固定版本
+opencode plugin check                      # 是否有新版本
+opencode plugin update                     # 升级到最新版
+opencode plugin remove opencode2-tasks     # 卸载
+```
+
+`./tui` 导出会被自动发现，侧边栏面板随同一次注册一起加载。
+
+### 手动编辑配置
 
 ```jsonc
 // ~/.config/opencode/opencode.jsonc（全局）或 ./opencode.jsonc（项目级）
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugins": ["opencode2-tasks"]
+  "plugins": ["opencode2-tasks"] // 固定版本写作 "opencode2-tasks@0.1.1"
 }
 ```
-
-`./tui` 导出会被自动发现，侧边栏面板随同一次注册一起加载。
 
 如果 OpenCode 连接的是**远程服务端**，请同时在仅 CLI 配置中注册本包，保证面板在本地也能工作：
 
@@ -83,15 +100,9 @@
 }
 ```
 
-### 固定版本
+**npm 包和本地目录只能二选一，不要同时注册**：否则插件会加载两次，`tasks` 工具和 `task-planning` skill 各注册两遍。
 
-```jsonc
-{
-  "plugins": ["opencode2-tasks@0.1.0"]
-}
-```
-
-然后重启 OpenCode 服务（`opencode service restart`）或 TUI。
+改完后用 `opencode reload` 生效；如果是在服务运行期间改的配置，也可以重启服务（`opencode service restart`）。
 
 ## 使用
 
@@ -160,7 +171,7 @@ tui.tsx  ─┘                      └─ OpenCode TUI 运行时（侧边栏�
 
 - `src/tasks.ts` 与 `src/skill.ts` 存放类型、存储路径和纯函数（`normalizeTasks`、`flattenTasks`、`parseSkillDocument`）。两者都**不引用任何 OpenCode API**，因此可以独立做单元测试。
 - `index.ts` 引用它们并注册 `tasks` 工具和内置 skill。它对 `@opencode/plugin` 只使用 `import type`：服务端运行时自行解析该模块，类型导入在加载时会被擦除，而导出的对象本身已经满足 `{ id, setup }` 契约。
-- `tui.tsx` 引用模型并渲染面板。侧边栏是同步渲染、而工具在另一个进程写盘，因此以 1.5 秒为间隔轮询状态目录，并在 `setup` 返回清理函数停掉定时器。
+- `tui.tsx` 引用模型并渲染面板。侧边栏是同步渲染、而工具在另一个进程写盘，因此以 1.5 秒为间隔轮询状态目录，并在 `setup` 返回清理函数停掉定时器。点击区块标题会立即重读，展开时不会看到过期快照。
 
 完整设计说明见 [`docs/architecture.md`](./docs/architecture.md)。
 
@@ -181,6 +192,15 @@ $XDG_STATE_HOME/opencode-tasks/<url-encoded-session-id>.json
 ```
 
 写入粒度保证读到半个文件时会被跳过；任务 id 经过 `encodeURIComponent` 转义，可安全用作文件名。
+
+### 按会话隔离
+
+任务清单是**按会话**的，面板只显示当前会话的那一份：
+
+- 每个会话有独立文件，文件名就是会话 id。**新开会话就是一份空清单**，不会继承上一个会话的任务。
+- 当前会话没有任务时 `Tasks` 区块不渲染；Agent 一旦写入就出现，清单被清空后又会消失。
+- 面板会把**所有**会话的清单镜像到内存，所以切换会话是立即重绘、不用等重读；后台轮询和点击标题重读负责让这些镜像保持最新。
+- 删掉某个会话的文件只影响那个会话。
 
 ## 开发
 
@@ -232,7 +252,10 @@ cat "${XDG_STATE_HOME:-$HOME/.local/state}/opencode-tasks/"*.json
 `Tasks` 区块只在当前会话至少有一个任务时才渲染。先让 Agent 调用 `tasks` 工具，再等一个刷新周期（1.5 秒）。修改 `plugins` 后需要重启服务：`opencode service restart`。
 
 **面板数据是旧的。**
-TUI 按固定间隔读盘。手工修改任务文件后，1.5 秒内会同步过来。
+TUI 每 1.5 秒重读状态目录，点击 `Tasks` 标题也会立即重读——手工改过任务文件的话，展开区块（或等一个周期）即可。
+
+**`Tasks` 区块的行数比预期少。**
+读不出的、或只写了一半的文件会被跳过，而不是让整块面板空白；而且每行只属于当前会话。用 `cat "${XDG_STATE_HOME:-$HOME/.local/state}/opencode-tasks/"*.json` 看看实际存了什么。
 
 **报错 `Cannot find module '@opencode/plugin'`。**
 `index.ts` 中的该导入是纯类型导入，运行时会被擦除。如果报错来自 `tui.tsx`，说明当前 OpenCode 版本还无法解析 `@opencode/plugin/tui`，请升级到支持的版本，或固定到兼容版本。
