@@ -63,11 +63,12 @@ opencode reload                       # 无需重启服务即可生效
 其余子命令：
 
 ```bash
-opencode plugin list                       # 当前加载了哪些插件、来自哪里
-opencode plugin add opencode2-tasks@0.1.1  # 固定版本
-opencode plugin check                      # 是否有新版本
-opencode plugin update                     # 升级到最新版
-opencode plugin remove opencode2-tasks     # 卸载
+opencode plugin list                        # 当前加载了哪些插件、来自哪里
+npm view opencode2-tasks version            # 查最新版本号
+opencode plugin add opencode2-tasks@x.y.z   # 固定版本
+opencode plugin check                       # 是否有新版本
+opencode plugin update                      # 升级到最新版
+opencode plugin remove opencode2-tasks      # 卸载
 ```
 
 `./tui` 导出会被自动发现，侧边栏面板随同一次注册一起加载。
@@ -78,7 +79,7 @@ opencode plugin remove opencode2-tasks     # 卸载
 // ~/.config/opencode/opencode.jsonc（全局）或 ./opencode.jsonc（项目级）
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugins": ["opencode2-tasks"] // 固定版本写作 "opencode2-tasks@0.1.1"
+  "plugins": ["opencode2-tasks"] // 追加 "@x.y.z" 即可固定版本
 }
 ```
 

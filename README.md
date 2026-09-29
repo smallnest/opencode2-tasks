@@ -63,11 +63,12 @@ opencode reload                       # apply it without restarting the service
 The rest of the subcommands:
 
 ```bash
-opencode plugin list                       # what is loaded, and from where
-opencode plugin add opencode2-tasks@0.1.1  # pin an exact version
-opencode plugin check                      # is a newer version available?
-opencode plugin update                     # upgrade to the latest
-opencode plugin remove opencode2-tasks     # uninstall
+opencode plugin list                        # what is loaded, and from where
+npm view opencode2-tasks version            # find the latest version
+opencode plugin add opencode2-tasks@x.y.z   # pin an exact version
+opencode plugin check                       # is a newer version available?
+opencode plugin update                      # upgrade to the latest
+opencode plugin remove opencode2-tasks      # uninstall
 ```
 
 The `./tui` export is discovered automatically, so the sidebar panel loads with the same entry.
@@ -78,7 +79,7 @@ The `./tui` export is discovered automatically, so the sidebar panel loads with 
 // ~/.config/opencode/opencode.jsonc  (global)  or  ./opencode.jsonc  (project)
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugins": ["opencode2-tasks"] // or "opencode2-tasks@0.1.1" to pin a version
+  "plugins": ["opencode2-tasks"] // append "@x.y.z" to pin a version
 }
 ```
 

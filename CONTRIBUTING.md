@@ -43,15 +43,26 @@ Individual commands:
 
 Releases are cut by pushing a tag; `.github/workflows/release.yml` then runs the full check, publishes to npm, and opens a GitHub release.
 
-```bash
-git tag -a v0.1.0 -m "opencode2-tasks 0.1.0"
-git push origin v0.1.0
-```
+1. Bump the version and move the `Unreleased` changelog entries under the new heading:
+
+   ```bash
+   npm version minor --no-git-tag-version   # or patch / major
+   ```
+
+2. Commit, then tag that commit and push both:
+
+   ```bash
+   git tag -a vX.Y.Z -m "opencode2-tasks X.Y.Z"
+   git push origin master
+   git push origin vX.Y.Z
+   ```
+
+The tag must point at a commit whose `package.json` already carries that version: the workflow publishes whatever the tagged checkout contains.
 
 A failed release can be retried without touching the tag:
 
 ```bash
-gh workflow run release.yml --ref v0.1.0
+gh workflow run release.yml --ref vX.Y.Z
 ```
 
 ### npm authentication
