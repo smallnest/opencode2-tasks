@@ -56,15 +56,20 @@ gh workflow run release.yml --ref v0.1.0
 
 ### npm authentication
 
-The workflow publishes with **trusted publishing (OIDC)**: the job requests `id-token: write`, and npm exchanges that for a short-lived credential, so no long-lived token is needed and provenance is generated automatically.
+The workflow prefers **trusted publishing (OIDC)**: because the job requests `id-token: write`, npm exchanges an OIDC token for a short-lived credential and ignores `NPM_TOKEN` entirely.
 
-There is one ordering constraint: npm only lets you configure a trusted publisher for a package that **already exists**. The very first publish of a new package therefore has to use 2FA interactively:
+There is one ordering constraint: npm only lets you configure a trusted publisher for a package that **already exists**. A brand-new package therefore needs one of:
 
-```bash
-npm publish --access public --otp=<code>
-```
+- **A CI publish with a granular token** that has write access and **Bypass two-factor authentication** checked. This is how `0.1.0` was released, and it still generates a provenance attestation. Note that this kind of token loses direct publish in January 2027.
+- **An interactive first publish** with 2FA on the account:
 
-Then, once, from a checkout (requires 2FA enabled on the npm account and `npm@11.15.0+`):
+  ```bash
+  npm publish --access public --otp=<code>
+  ```
+
+  This version will not carry a provenance attestation.
+
+Either way, configure trusted publishing once the package exists (`npm@11.15.0+`, 2FA enabled on the account):
 
 ```bash
 npm trust github opencode2-tasks \
@@ -73,9 +78,9 @@ npm trust github opencode2-tasks \
   --allow-publish
 ```
 
-`repository.url` in `package.json` must match the GitHub repository, or the OIDC claim check will fail. Verify with `npm trust list opencode2-tasks`.
+`repository.url` in `package.json` must match the GitHub repository, or the OIDC claim check fails. Verify with `npm trust list opencode2-tasks`, then delete the `NPM_TOKEN` secret — it is only needed for the bootstrap case.
 
-The `NPM_TOKEN` secret is only a fallback for accounts that cannot use OIDC. If you set it, it must be a granular access token with **Bypass 2FA** enabled — a plain granular token is rejected with `E403`. Once trusted publishing works, delete the secret.
+A token used for publishing must be a granular access token with **write** access and **Bypass two-factor authentication** checked. That box is set at token creation only, defaults to off, and cannot be enabled afterwards; a token without it is rejected with `E403`, and a read-only token cannot publish at all.
 
 ## Host-coupled dependencies
 
