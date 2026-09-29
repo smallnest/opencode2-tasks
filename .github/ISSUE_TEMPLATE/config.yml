@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Question or idea
+    url: https://github.com/smallnest/opencode2-tasks/discussions
+    about: Ask a question or discuss an idea with the community.
+  - name: Security report
+    url: https://github.com/smallnest/opencode2-tasks/security/advisories/new
+    about: Report a vulnerability privately. Do not open a public issue.

@@ -1,0 +1,81 @@
+name: Bug report
+description: Report something that is broken or behaves unexpectedly.
+title: "[Bug]: "
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug! Please fill in as much as you can — it makes the report far easier to act on.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the bug, and what you expected instead.
+      placeholder: The Tasks section never appears after the agent calls the tasks tool.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: The smallest sequence that shows the problem.
+      placeholder: |
+        1. Add the plugin to opencode.jsonc
+        2. Restart the service
+        3. Ask the agent to plan a task
+        4. Look at the sidebar
+    validations:
+      required: true
+
+  - type: input
+    id: opencode-version
+    attributes:
+      label: OpenCode version
+      description: Output of `opencode --version`.
+      placeholder: v2.0.18
+    validations:
+      required: true
+
+  - type: input
+    id: plugin-version
+    attributes:
+      label: opencode2-tasks version
+      description: The version from package.json, or the commit you are running.
+      placeholder: 0.1.0
+    validations:
+      required: true
+
+  - type: input
+    id: node-version
+    attributes:
+      label: Node.js version
+      description: Output of `node --version` (if you ran the code directly).
+      placeholder: v22.18.0
+    validations:
+      required: false
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - macOS
+        - Linux
+        - Windows
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs and task files
+      description: |
+        Logs from `~/.local/share/opencode/log/opencode.log`, plus the contents of
+        `${XDG_STATE_HOME:-$HOME/.local/state}/opencode-tasks/`. **Remove anything sensitive.**
+      render: shell
+    validations:
+      required: false

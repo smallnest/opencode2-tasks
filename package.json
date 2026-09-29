@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json.schemastore.org/package.json",
+  "name": "opencode2-tasks",
+  "version": "0.1.0",
+  "description": "A Tasks panel for OpenCode V2: a `tasks` tool plus a live, nestable task list in the TUI sidebar.",
+  "type": "module",
+  "license": "MIT",
+  "author": "smallnest <smallnest@gmail.com>",
+  "homepage": "https://github.com/smallnest/opencode2-tasks#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/smallnest/opencode2-tasks.git"
+  },
+  "bugs": {
+    "url": "https://github.com/smallnest/opencode2-tasks/issues"
+  },
+  "keywords": [
+    "opencode",
+    "opencode-plugin",
+    "plugin",
+    "tasks",
+    "todo",
+    "task-list",
+    "tui",
+    "sidebar",
+    "agent"
+  ],
+  "exports": {
+    ".": "./index.ts",
+    "./tui": "./tui.tsx"
+  },
+  "files": [
+    "index.ts",
+    "tui.tsx",
+    "src",
+    "skills",
+    "docs",
+    "README.md",
+    "README_CN.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=22.18.0"
+  },
+  "scripts": {
+    "test": "node --test \"test/**/*.test.ts\"",
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "check": "npm run typecheck && npm run format:check && npm test",
+    "prepublishOnly": "npm run check"
+  },
+  "dependencies": {
+    "@opencode/plugin": "^2.0.18"
+  },
+  "peerDependencies": {
+    "@opentui/core": ">=0.5.8",
+    "@opentui/solid": ">=0.5.8",
+    "solid-js": ">=1.9.0"
+  },
+  "devDependencies": {
+    "@opencode/theme": "^2.0.18",
+    "@opentui/core": "^0.5.12",
+    "@opentui/solid": "^0.5.12",
+    "@types/node": "^24.12.2",
+    "prettier": "^3.4.2",
+    "solid-js": "1.9.12",
+    "typescript": "^5.8.2"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
+}
