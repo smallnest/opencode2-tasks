@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-09-29
+
+### Fixed
+
+- The install snippets no longer hardcode a version. `opencode plugin add opencode2-tasks@0.1.1` and the matching config comment went stale the moment 0.1.2 shipped; both now use a placeholder, with `npm view opencode2-tasks version` to look up the current release.
+- `CONTRIBUTING.md` release steps use a `vX.Y.Z` placeholder and now include the missing version-bump step, so the example no longer encourages re-pushing an existing tag.
+
 ## [0.1.2] - 2026-09-29
 
 ### Fixed
@@ -47,7 +54,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Unit test suite (`node:test`) covering normalization, flattening, and storage.
 - TypeScript type-checking, Prettier formatting, and a GitHub Actions CI workflow.
 
-[Unreleased]: https://github.com/smallnest/opencode2-tasks/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/smallnest/opencode2-tasks/compare/v0.1.3...HEAD
+[0.1.3]: https://github.com/smallnest/opencode2-tasks/releases/tag/v0.1.3
 [0.1.2]: https://github.com/smallnest/opencode2-tasks/releases/tag/v0.1.2
 [0.1.1]: https://github.com/smallnest/opencode2-tasks/releases/tag/v0.1.1
 [0.1.0]: https://github.com/smallnest/opencode2-tasks/releases/tag/v0.1.0
