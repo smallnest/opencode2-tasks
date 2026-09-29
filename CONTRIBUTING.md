@@ -39,6 +39,18 @@ Individual commands:
 - **Preserve the storage format.** Existing `~/.local/state/opencode-tasks/*.json` files must keep working. If the format must change, handle the old shape and note it in the changelog.
 - **Update the docs.** User-visible changes need an entry under `Unreleased` in `CHANGELOG.md`, and the matching section in **both** `README.md` and `README_CN.md` kept in sync.
 
+## Host-coupled dependencies
+
+`@opencode/plugin`, `@opencode/theme`, `@opentui/core`, `@opentui/solid`, and `solid-js` are pinned to what the running OpenCode version ships, and `@opentui/solid` declares an **exact** `solid-js` peer. Bumping any of them alone makes `npm ci` fail with `ERESOLVE`, so Dependabot is configured to ignore them.
+
+To move them, change all of them in one commit and re-run `npm install` to regenerate `package-lock.json`:
+
+```bash
+npm install @opencode/plugin@<version> @opencode/theme@<version> \
+  @opentui/core@<version> @opentui/solid@<version> -D
+npm run check
+```
+
 ## Commit messages
 
 This project follows [Conventional Commits](https://www.conventionalcommits.org/):

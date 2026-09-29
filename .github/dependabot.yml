@@ -8,6 +8,19 @@ updates:
     groups:
       dev-dependencies:
         dependency-type: development
+    ignore:
+      # These are coupled to the host runtime and must be bumped together, by
+      # hand, after checking what the running OpenCode version ships:
+      #
+      # - `@opentui/solid` declares an exact `solid-js` peer, so bumping either
+      #   one alone makes `npm ci` fail with ERESOLVE.
+      # - `@opencode/plugin` and `@opencode/theme` must match the OpenCode
+      #   version the plugin is loaded by.
+      - dependency-name: "@opentui/core"
+      - dependency-name: "@opentui/solid"
+      - dependency-name: "solid-js"
+      - dependency-name: "@opencode/plugin"
+      - dependency-name: "@opencode/theme"
 
   - package-ecosystem: github-actions
     directory: "/"
